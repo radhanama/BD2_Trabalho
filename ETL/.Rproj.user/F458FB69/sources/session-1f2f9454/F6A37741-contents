@@ -1,0 +1,117 @@
+library(readr)
+
+customer <- read_delim("customer.tbl", delim = "|",
+                       escape_double = FALSE, col_names = FALSE,
+                       trim_ws = TRUE)
+colnames(customer) <- c("C_CUSTKEY", "C_NAME", "C_ADDRESS", "C_NATIONKEY", "C_PHONE", 
+                        "C_ACCTBAL", "C_MKTSEGMENT", "C_COMMENT")
+customer[,ncol(customer)] <- NULL
+
+lineitem <- read_delim("lineitem.tbl", delim = "|",
+                       escape_double = FALSE, col_names = FALSE,
+                       col_types = cols(X11 = col_date(format = "%Y-%m-%d"),
+                                        X12 = col_date(format = "%Y-%m-%d"),
+                                        X13 = col_date(format = "%Y-%m-%d")),
+                       trim_ws = TRUE)
+colnames(lineitem) <- c("L_ORDERKEY", "L_PARTKEY", "L_SUPPKEY", "L_LINENUMBER", "L_QUANTITY", 
+                        "L_EXTENDEDPRICE", "L_DISCOUNT", "L_TAX", "L_RETURNFLAG", "L_LINESTATUS", 
+                        "L_SHIPDATE", "L_COMMITDATE", "L_RECEIPTDATE", "L_SHIPINSTRUCT", "L_SHIPMODE",
+                        "L_COMMENT")
+lineitem[,ncol(lineitem)] <- NULL
+
+nation <- read_delim("nation.tbl", delim = "|",
+                     escape_double = FALSE, col_names = FALSE,
+                     trim_ws = TRUE)
+colnames(nation) <- c("N_NATIONKEY", "N_NAME", "N_REGIONKEY", "N_COMMENT")
+nation[,ncol(nation)] <- NULL
+
+orders <- read_delim("orders.tbl", delim = "|", 
+                     escape_double = FALSE, col_names = FALSE, 
+                     trim_ws = TRUE)
+colnames(orders) <- c("O_ORDERKEY", "O_CUSTKEY", "O_ORDERSTATUS", "O_TOTALPRICE", "O_ORDERDATE",
+                      "O_ORDERPRIORITY", "O_CLERK", "O_SHIPPRIORITY", "O_COMMENT")
+orders[,ncol(orders)] <- NULL
+
+part <- read_delim("part.tbl", delim = "|", 
+                   escape_double = FALSE, col_names = FALSE, 
+                   trim_ws = TRUE)
+colnames(part) <- c("P_PARTKEY", "P_NAME", "P_MFGR", "P_BRAND", "P_TYPE",
+                      "P_SIZE", "P_CONTAINER", "P_RETAILPRICE", "O_P_COMMENTCOMMENT")
+part[,ncol(part)] <- NULL
+
+
+partsupp <- read_delim("partsupp.tbl", delim = "|", 
+                   escape_double = FALSE, col_names = FALSE, 
+                   trim_ws = TRUE)
+colnames(partsupp) <- c("PS_PARTKEY", "PS_SUPPKEY", "PS_AVAILQTY", "PS_SUPPLYCOST", "PS_COMMENT")
+partsupp[,ncol(partsupp)] <- NULL
+
+region <- read_delim("region.tbl", delim = "|", 
+                       escape_double = FALSE, col_names = FALSE, 
+                       trim_ws = TRUE)
+colnames(region) <- c("R_REGIONKEY", "R_NAME", "R_COMMENT")
+region[,ncol(region)] <- NULL
+
+supplier <- read_delim("supplier.tbl", delim = "|", 
+                     escape_double = FALSE, col_names = FALSE, 
+                     trim_ws = TRUE)
+colnames(supplier) <- c("S_SUPPKEY", "S_NAME", "S_ADDRESS", "S_NATIONKEY", "S_PHONE", 
+                        "S_ACCTBAL", "S_COMMENT")
+supplier[,ncol(supplier)] <- NULL
+
+bulk_insert <- function(conn, data, table_name) {
+  table_name_aux <- sprintf("%s_aux", table_name)
+  dbWriteTable(conn, table_name_aux, data)  
+#temp_db <- dbReadTable(conn, table_name_aux)
+#dbSendUpdate(jdbcConnection, sprintf('insert into %s select * from %s', table_name, table_name_aux))
+#dbSendUpdate(jdbcConnection,sprintf('drop table %s', table_name_aux))
+}
+
+if (FALSE) {
+  library(RJDBC)
+  library(DBI)
+  jdbcDriver <- JDBC("oracle.jdbc.OracleDriver",classPath="ojdbc8.jar")
+  ora <- dbConnect(jdbcDriver, "jdbc:oracle:thin:@//localhost:1521/xe", "TPCH", "tpch2023#")
+  
+  
+  bulk_insert(ora, customer, 'customer')
+  bulk_insert(ora, lineitem, 'lineitem')
+  bulk_insert(ora, nation, 'nation')
+  bulk_insert(ora, orders, 'orders')
+  bulk_insert(ora, part, 'part')
+  bulk_insert(ora, partsupp, 'partsupp')
+  bulk_insert(ora, region, 'region')
+  bulk_insert(ora, supplier, 'supplier')
+  
+  dbSendUpdate(ora, sprintf('insert into %s select * from %s', "customer", "customer_aux"))
+  dbSendUpdate(ora, sprintf('insert into %s select * from %s', "nation", "nation_aux"))
+  dbSendUpdate(ora, sprintf('insert into %s select * from %s', "part", "part_aux"))
+  dbSendUpdate(ora, sprintf('insert into %s select * from %s', "partsupp", "partsupp_aux"))
+  dbSendUpdate(ora, sprintf('insert into %s select * from %s', "region", "region_aux"))
+  dbSendUpdate(ora, sprintf('insert into %s select * from %s', "supplier", "supplier_aux"))
+  #falta lineitem e orders
+}
+
+if (FALSE) {
+  library(RJDBC)
+  library(DBI)
+  jdbcDriver <- JDBC("com.microsoft.sqlserver.jdbc.SQLServerDriver",classPath="mssql-jdbc-12.4.0.jre8.jar")
+  conn <- DBI::dbConnect(jdbcDriver, url='jdbc:sqlserver://127.0.0.1;databaseName=tpch;encrypt=true;trustServerCertificate=true' , user="tpch", password="tpch2023#")
+  print(conn)
+  temp_db <- dbReadTable(conn, "nation")
+
+  #temp_db <- dbReadTable(conn, table_name_aux)
+}
+
+if (FALSE) {
+  library(RJDBC)
+  library(DBI)
+  driver <- JDBC(driverClass = "org.postgresql.Driver", classPath = "postgresql-42.6.0.jar", identifier.quote = "'") 
+  conn <- dbConnect(driver, url="jdbc:postgresql://127.0.0.1:5432/tpch", user="tpch", password="tpch2023#")  
+  print(conn)
+  temp_db <- dbReadTable(conn, "nation")
+}
+
+
+
+
