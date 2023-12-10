@@ -69,13 +69,13 @@
 \maketitle
 
 \section*{Introdução}
-Ao longo deste documento, apresentamos uma análise detalhada de consultas específicas, destacando os desafios encontrados durante a execução e as melhorias propostas para aprimorar o desempenho.
-
+Neste documento, conduzimos uma análise abrangente de dez consultas do TPC-H 2.6.1, abordando inicialmente as cinco consultas originais do benchmark, seguidas por cinco consultas adicionais desenvolvidas exclusivamente para este relatório. Este relatorio detalhado proporcionará uma compreensão aprofundada do desempenho e da eficácia das consultas, destacando eventuais otimizações e estratégias implementadas para alcançar resultados mais eficientes.
 \section{Primeira Consulta:}
 
 
 \subsection{Objetivo da consulta:}
-objetivo aqui.
+Esta consulta determina o valor dos produtos enviados entre certas nações para auxiliar na renegociação de contratos de envio.
+
 \subsection{Consulta em SQL:}
 \begin{lstlisting}
 SELECT SUPP_NATION,
@@ -142,7 +142,8 @@ consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usad
 
 
 \subsection{Objetivo da consulta:}
-objetivo aqui.
+Esta consulta determina como a participação de mercado de uma nação específica dentro de uma região específica mudou ao longo de dois anos para um determinado tipo de peça.
+
 \subsection{Consulta em SQL:}
 \begin{lstlisting}
 SELECT O_YEAR,
@@ -204,7 +205,8 @@ consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usad
 
 
 \subsection{Objetivo da consulta:}
-objetivo aqui.
+Esta consulta verifica quantos fornecedores podem fornecer peças com atributos específicos. Pode ser usada, por exemplo, para determinar se há um número suficiente de fornecedores para peças com alta demanda.
+
 \subsection{Consulta em SQL:}
 \begin{lstlisting}
 select p_brand,
@@ -252,7 +254,8 @@ consultas:} Criação de Índice: Certifique-se de ter índices em \texttt{PARTS
 
 
 \subsection{Objetivo da consulta:}
-objetivo aqui.
+A Consulta do Cliente de Grande Volume classifica os clientes com base em terem feito um pedido de grande quantidade. Pedidos de grande quantidade são definidos como aqueles cuja quantidade total está acima de um certo nível.
+
 \subsection{Consulta em SQL:}
 \begin{lstlisting}
 select c_name,
@@ -301,7 +304,8 @@ consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usad
 
 
 \subsection{Objetivo da consulta:}
-objetivo aqui.
+A Consulta de Receita com Desconto relata a receita bruta com desconto atribuída à venda de peças selecionadas manipuladas de uma maneira específica. Essa consulta é um exemplo de código que poderia ser gerado programaticamente por uma ferramenta de mineração de dados.
+
 \subsection{Consulta em SQL:}
 \begin{lstlisting}
 select sum(l_extendedprice * (1 - l_discount)) as revenue
