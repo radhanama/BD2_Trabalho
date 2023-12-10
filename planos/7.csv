@@ -1,0 +1,9 @@
+QUERY PLAN
+Hash Join  (cost=20421.95..25315.81 rows=150000 width=70)
+  Hash Cond: (orders.o_custkey = customer.c_custkey)
+  ->  WindowAgg  (cost=19714.45..22714.45 rows=150000 width=48)
+        ->  Sort  (cost=19714.45..20089.45 rows=150000 width=16)
+              Sort Key: orders.o_custkey, orders.o_orderkey
+              ->  Seq Scan on orders  (cost=0.00..4253.00 rows=150000 width=16)
+  ->  Hash  (cost=520.00..520.00 rows=15000 width=30)
+        ->  Seq Scan on customer  (cost=0.00..520.00 rows=15000 width=30)

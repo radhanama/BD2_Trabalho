@@ -1,0 +1,13 @@
+QUERY PLAN
+Finalize Aggregate  (cost=23458.96..23458.97 rows=1 width=32)
+  ->  Gather  (cost=23458.73..23458.94 rows=2 width=32)
+        Workers Planned: 2
+        ->  Partial Aggregate  (cost=22458.73..22458.74 rows=1 width=32)
+              ->  Hash Join  (cost=1260.60..22458.69 rows=5 width=12)
+                    Hash Cond: (lineitem.l_partkey = part.p_partkey)
+                    Join Filter: (((part.p_brand = 'Brand#12'::bpchar) AND (part.p_container = ANY ('{SM CASE,SM BOX,SM PACK,SM PKG}'::bpchar[])) AND (lineitem.l_quantity >= '1'::numeric) AND (lineitem.l_quantity <= '11'::numeric) AND (part.p_size <= 5) AND (lineitem.l_shipmode = ANY ('{AIR ,AIR REG}'::bpchar[]))) OR ((part.p_brand = 'Brand#23'::bpchar) AND (part.p_container = ANY ('{MED BAG,MED BOX,MED PKG,MED PACK}'::bpchar[])) AND (lineitem.l_quantity >= '10'::numeric) AND (lineitem.l_quantity <= '20'::numeric) AND (part.p_size <= 10) AND (lineitem.l_shipmode = ANY ('{AIR,AIR REG}'::bpchar[]))) OR ((part.p_brand = 'Brand#34'::bpchar) AND (part.p_container = ANY ('{LG CASE,LG BOX,LG PACK,LG PKG}'::bpchar[])) AND (lineitem.l_quantity >= '20'::numeric) AND (lineitem.l_quantity <= '30'::numeric) AND (part.p_size <= 15) AND (lineitem.l_shipmode = ANY ('{AIR,AIR REG}'::bpchar[]))))
+                    ->  Parallel Seq Scan on lineitem  (cost=0.00..21183.34 rows=5620 width=32)
+                          Filter: ((l_shipinstruct = 'DELIVER IN PERSON'::bpchar) AND (((l_quantity >= '1'::numeric) AND (l_quantity <= '11'::numeric) AND (l_shipmode = ANY ('{AIR ,AIR REG}'::bpchar[]))) OR ((l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric) AND (l_shipmode = ANY ('{AIR,AIR REG}'::bpchar[]))) OR ((l_quantity >= '20'::numeric) AND (l_quantity <= '30'::numeric) AND (l_shipmode = ANY ('{AIR,AIR REG}'::bpchar[])))))
+                    ->  Hash  (cost=1260.00..1260.00 rows=48 width=30)
+                          ->  Seq Scan on part  (cost=0.00..1260.00 rows=48 width=30)
+                                Filter: ((p_size >= 1) AND (((p_brand = 'Brand#12'::bpchar) AND (p_container = ANY ('{SM CASE,SM BOX,SM PACK,SM PKG}'::bpchar[])) AND (p_size <= 5)) OR ((p_brand = 'Brand#23'::bpchar) AND (p_container = ANY ('{MED BAG,MED BOX,MED PKG,MED PACK}'::bpchar[])) AND (p_size <= 10)) OR ((p_brand = 'Brand#34'::bpchar) AND (p_container = ANY ('{LG CASE,LG BOX,LG PACK,LG PKG}'::bpchar[])) AND (p_size <= 15))))

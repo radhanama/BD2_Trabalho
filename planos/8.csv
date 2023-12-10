@@ -1,0 +1,29 @@
+QUERY PLAN
+Finalize GroupAggregate  (cost=63378.42..139792.97 rows=409020 width=144)
+  Group Key: region.r_name, (date_part('year'::text, orders.o_orderdate))
+  ->  Gather Merge  (cost=63378.42..128652.91 rows=500476 width=144)
+        Workers Planned: 2
+        ->  Partial GroupAggregate  (cost=62378.40..69885.54 rows=250238 width=144)
+              Group Key: region.r_name, (date_part('year'::text, orders.o_orderdate))
+              ->  Sort  (cost=62378.40..63003.99 rows=250238 width=124)
+                    Sort Key: region.r_name, (date_part('year'::text, orders.o_orderdate))
+                    ->  Hash Join  (cost=5473.44..23686.88 rows=250238 width=124)
+                          Hash Cond: (nation.n_regionkey = region.r_regionkey)
+                          ->  Hash Join  (cost=5459.62..22374.21 rows=250238 width=24)
+                                Hash Cond: (customer.c_nationkey = nation.n_nationkey)
+                                ->  Hash Join  (cost=5445.79..21687.13 rows=250238 width=24)
+                                      Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                      ->  Parallel Hash Join  (cost=4738.29..20322.57 rows=250238 width=24)
+                                            Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                                            ->  Parallel Seq Scan on lineitem  (cost=0.00..14927.38 rows=250238 width=16)
+                                            ->  Parallel Hash  (cost=3635.35..3635.35 rows=88235 width=16)
+                                                  ->  Parallel Seq Scan on orders  (cost=0.00..3635.35 rows=88235 width=16)
+                                      ->  Hash  (cost=520.00..520.00 rows=15000 width=8)
+                                            ->  Seq Scan on customer  (cost=0.00..520.00 rows=15000 width=8)
+                                ->  Hash  (cost=11.70..11.70 rows=170 width=8)
+                                      ->  Seq Scan on nation  (cost=0.00..11.70 rows=170 width=8)
+                          ->  Hash  (cost=11.70..11.70 rows=170 width=108)
+                                ->  Seq Scan on region  (cost=0.00..11.70 rows=170 width=108)
+JIT:
+  Functions: 43
+  Options: Inlining false, Optimization false, Expressions true, Deforming true

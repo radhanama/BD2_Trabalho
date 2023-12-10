@@ -1,0 +1,17 @@
+QUERY PLAN
+Sort  (cost=4366.25..4370.22 rows=1587 width=44)
+  Sort Key: (count(DISTINCT partsupp.ps_suppkey)) DESC, part.p_brand, part.p_type, part.p_size
+  ->  GroupAggregate  (cost=4193.06..4281.88 rows=1587 width=44)
+        Group Key: part.p_brand, part.p_type, part.p_size
+        ->  Sort  (cost=4193.06..4207.65 rows=5836 width=40)
+              Sort Key: part.p_brand, part.p_type, part.p_size
+              ->  Hash Join  (cost=981.98..3828.00 rows=5836 width=40)
+                    Hash Cond: (partsupp.ps_partkey = part.p_partkey)
+                    ->  Seq Scan on partsupp  (cost=35.50..2776.50 rows=40000 width=8)
+                          Filter: (NOT (hashed SubPlan 1))
+                          SubPlan 1
+                            ->  Seq Scan on supplier  (cost=0.00..35.50 rows=1 width=4)
+                                  Filter: ((s_comment)::text ~~ '%Customer%Complaints%'::text)
+                    ->  Hash  (cost=910.00..910.00 rows=2918 width=40)
+                          ->  Seq Scan on part  (cost=0.00..910.00 rows=2918 width=40)
+                                Filter: ((p_brand <> 'Brand#45'::bpchar) AND ((p_type)::text !~~ 'MEDIUM POLISHED%'::text) AND (p_size = ANY ('{49,14,23,45,19,3,36,9}'::integer[])))

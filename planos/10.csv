@@ -1,0 +1,12 @@
+QUERY PLAN
+Index Scan using supplier_pk on supplier  (cost=3441.89..3505.41 rows=500 width=34)
+  Filter: (NOT (hashed SubPlan 1))
+  SubPlan 1
+    ->  HashAggregate  (cost=3429.11..3439.11 rows=1000 width=4)
+          Group Key: partsupp.ps_suppkey
+          ->  Hash Join  (cost=670.04..3421.08 rows=3212 width=4)
+                Hash Cond: (partsupp.ps_partkey = part.p_partkey)
+                ->  Seq Scan on partsupp  (cost=0.00..2541.00 rows=80000 width=8)
+                ->  Hash  (cost=660.00..660.00 rows=803 width=4)
+                      ->  Seq Scan on part  (cost=0.00..660.00 rows=803 width=4)
+                            Filter: (p_brand = 'Brand#12'::bpchar)

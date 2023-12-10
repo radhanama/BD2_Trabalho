@@ -1,0 +1,30 @@
+QUERY PLAN
+Sort  (cost=122403.60..122809.74 rows=162455 width=82)
+  Sort Key: orders.o_totalprice DESC, orders.o_orderdate
+  ->  Finalize GroupAggregate  (cost=80032.65..100566.38 rows=162455 width=82)
+        Group Key: customer.c_custkey, orders.o_orderkey
+        ->  Gather Merge  (cost=80032.65..97181.89 rows=135380 width=82)
+              Workers Planned: 2
+              ->  Partial GroupAggregate  (cost=79032.63..80555.66 rows=67690 width=82)
+                    Group Key: customer.c_custkey, orders.o_orderkey
+                    ->  Sort  (cost=79032.63..79201.86 rows=67690 width=55)
+                          Sort Key: customer.c_custkey, orders.o_orderkey
+                          ->  Parallel Hash Join  (cost=55020.68..71284.64 rows=67690 width=55)
+                                Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                                ->  Parallel Seq Scan on lineitem  (cost=0.00..14927.38 rows=250238 width=9)
+                                ->  Parallel Hash  (cost=54722.33..54722.33 rows=23868 width=54)
+                                      ->  Hash Join  (cost=50792.68..54722.33 rows=23868 width=54)
+                                            Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                            ->  Hash Join  (cost=50085.18..53952.16 rows=23868 width=28)
+                                                  Hash Cond: (orders.o_orderkey = lineitem_1.l_orderkey)
+                                                  ->  Parallel Seq Scan on orders  (cost=0.00..3635.35 rows=88235 width=24)
+                                                  ->  Hash  (cost=49577.99..49577.99 rows=40575 width=4)
+                                                        ->  GroupAggregate  (cost=0.42..49172.24 rows=40575 width=4)
+                                                              Group Key: lineitem_1.l_orderkey
+                                                              Filter: (sum(lineitem_1.l_quantity) > '300'::numeric)
+                                                              ->  Index Scan using lineitem_pk on lineitem lineitem_1  (cost=0.42..44343.51 rows=600572 width=9)
+                                            ->  Hash  (cost=520.00..520.00 rows=15000 width=30)
+                                                  ->  Seq Scan on customer  (cost=0.00..520.00 rows=15000 width=30)
+JIT:
+  Functions: 40
+  Options: Inlining false, Optimization false, Expressions true, Deforming true

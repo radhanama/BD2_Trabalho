@@ -1,0 +1,20 @@
+QUERY PLAN
+Limit  (cost=29263.66..29263.68 rows=10 width=58)
+  ->  Sort  (cost=29263.66..29301.16 rows=15000 width=58)
+        Sort Key: customerrevenue.totalrevenue DESC
+        ->  Subquery Scan on customerrevenue  (cost=28602.01..28939.51 rows=15000 width=58)
+              ->  Finalize HashAggregate  (cost=28602.01..28789.51 rows=15000 width=62)
+                    Group Key: customer.c_custkey
+                    ->  Gather  (cost=25189.51..28377.01 rows=30000 width=62)
+                          Workers Planned: 2
+                          ->  Partial HashAggregate  (cost=24189.51..24377.01 rows=15000 width=62)
+                                Group Key: customer.c_custkey
+                                ->  Hash Join  (cost=5445.79..21687.13 rows=250238 width=42)
+                                      Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                      ->  Parallel Hash Join  (cost=4738.29..20322.57 rows=250238 width=16)
+                                            Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                                            ->  Parallel Seq Scan on lineitem  (cost=0.00..14927.38 rows=250238 width=16)
+                                            ->  Parallel Hash  (cost=3635.35..3635.35 rows=88235 width=8)
+                                                  ->  Parallel Seq Scan on orders  (cost=0.00..3635.35 rows=88235 width=8)
+                                      ->  Hash  (cost=520.00..520.00 rows=15000 width=30)
+                                            ->  Seq Scan on customer  (cost=0.00..520.00 rows=15000 width=30)

@@ -1,0 +1,597 @@
+\documentclass[12pt]{article}
+\usepackage{pdflscape}
+\usepackage{listings}
+\usepackage{sbc-template} 
+\usepackage{graphicx,url}
+\usepackage{url}
+\usepackage[brazil]{babel} 
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}
+\usepackage[normalem]{ulem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{svg}
+
+\usepackage[square,authoryear]{natbib}
+\usepackage{amssymb} 
+\usepackage{mathalfa} 
+\usepackage{algorithm} 
+\usepackage{algpseudocode} 
+\usepackage[table]{xcolor}
+\usepackage{array}
+\usepackage{titlesec}
+\usepackage{mdframed}
+\usepackage{listings}
+
+\usepackage{amsmath} 
+\usepackage{booktabs}
+
+\urlstyle{same}
+
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\newcommand\Tstrut{\rule{0pt}{2.6ex}} 
+\newcommand\Bstrut{\rule[-0.9ex]{0pt}{0pt}} 
+\newcommand{\scell}[2][c]{\begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+
+\usepackage[nolist,nohyperlinks]{acronym}
+
+\title{Trabalho de Administração de Banco de Dados}
+
+\author{Radhanama Mesiano\inst{1}}
+
+
+\address{Centro Federal de Educação Tecnológica Celso Suckow da Fonseca - CEFET/RJ
+	\email{radhanama.mesiano@aluno.cefet-rj.br}
+}
+\lstdefinestyle{sql}{
+  language=SQL,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape\color{gray},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=true,
+  showstringspaces=false,
+  captionpos=b,
+}
+
+\lstset{
+  language=SQL,
+  breaklines=true, % quebra de linha automática
+}
+\begin{document}
+
+\begin{landscape}
+\maketitle
+
+\section*{Introdução}
+Ao longo deste documento, apresentamos uma análise detalhada de consultas específicas, destacando os desafios encontrados durante a execução e as melhorias propostas para aprimorar o desempenho.
+
+\section{Primeira Consulta:}
+
+
+\subsection{Objetivo da consulta:}
+objetivo aqui.
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+SELECT SUPP_NATION,
+	CUST_NATION,
+	L_YEAR,
+	SUM(VOLUME) AS REVENUE
+FROM (
+		SELECT N1.N_NAME AS SUPP_NATION,
+			N2.N_NAME AS CUST_NATION,
+			EXTRACT(
+				YEAR
+				FROM L_SHIPDATE
+			) AS L_YEAR,
+			L_EXTENDEDPRICE * (1 - L_DISCOUNT) AS VOLUME
+		FROM SUPPLIER,
+			LINEITEM,
+			ORDERS,
+			CUSTOMER,
+			NATION N1,
+			NATION N2
+		WHERE S_SUPPKEY = L_SUPPKEY
+			AND O_ORDERKEY = L_ORDERKEY
+			AND C_CUSTKEY = O_CUSTKEY
+			AND S_NATIONKEY = N1.N_NATIONKEY
+			AND C_NATIONKEY = N2.N_NATIONKEY
+			AND (
+				(
+					N1.N_NAME = 'FRANCE'
+					AND N2.N_NAME = 'GERMANY'
+				)
+				OR (
+					N1.N_NAME = 'GERMANY'
+					AND N2.N_NAME = 'FRANCE'
+				)
+			)
+			AND L_SHIPDATE BETWEEN date '1995-01-01' AND date '1996-12-31'
+	) AS SHIPPING
+GROUP BY SUPP_NATION,
+	CUST_NATION,
+	L_YEAR
+ORDER BY SUPP_NATION,
+	CUST_NATION,
+	L_YEAR;
+\end{lstlisting}
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.252 \\
+  Execução 2 & 00:00:00.522 \\
+  Execução 3 & 00:00:00.205 \\
+  Execução 4 & 00:00:00.186 \\
+  Execução 5 & 00:00:00.249 \\
+  \hline
+  Média & 00:00:00.282 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/1.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{S\_SUPPKEY}, \texttt{L\_SUPPKEY}, \texttt{O\_ORDERKEY}, \texttt{C\_CUSTKEY}, \texttt{N\_NATIONKEY} e \texttt{L\_SHIPDATE}.
+
+\section{Segunda Consulta:}
+
+
+\subsection{Objetivo da consulta:}
+objetivo aqui.
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+SELECT O_YEAR,
+	SUM(
+		CASE
+			WHEN NATION = 'BRAZIL' THEN VOLUME
+			ELSE 0
+		END
+	) / SUM(VOLUME) AS MKT_SHARE
+FROM (
+		SELECT EXTRACT(
+				YEAR
+				FROM O_ORDERDATE
+			) AS O_YEAR,
+			L_EXTENDEDPRICE * (1 - L_DISCOUNT) AS VOLUME,
+			N2.N_NAME AS NATION
+		FROM PART,
+			SUPPLIER,
+			LINEITEM,
+			ORDERS,
+			CUSTOMER,
+			NATION N1,
+			NATION N2,
+			REGION
+		WHERE P_PARTKEY = L_PARTKEY
+			AND S_SUPPKEY = L_SUPPKEY
+			AND L_ORDERKEY = O_ORDERKEY
+			AND O_CUSTKEY = C_CUSTKEY
+			AND C_NATIONKEY = N1.N_NATIONKEY
+			AND N1.N_REGIONKEY = R_REGIONKEY
+			AND R_NAME = 'AMERICA'
+			AND S_NATIONKEY = N2.N_NATIONKEY
+			AND O_ORDERDATE BETWEEN date '1995-01-01' AND date '1996-12-31'
+			AND P_TYPE = 'ECONOMY ANODIZED STEEL'
+	) AS ALL_NATIONS
+GROUP BY O_YEAR
+ORDER BY O_YEAR;
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.133 \\
+  Execução 2 & 00:00:00.439 \\
+  Execução 3 & 00:00:00.155 \\
+  Execução 4 & 00:00:00.124 \\
+  Execução 5 & 00:00:00.120 \\
+  \hline
+  Média & 00:00:00.194 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/2.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{P\_PARTKEY}, \texttt{L\_PARTKEY}, \texttt{S\_SUPPKEY}, \texttt{L\_SUPPKEY}, \texttt{O\_ORDERKEY}, \texttt{C\_CUSTKEY}, \texttt{N\_NATIONKEY} e \texttt{O\_ORDERDATE}.
+
+\section{Terceira Consulta:}
+
+
+\subsection{Objetivo da consulta:}
+objetivo aqui.
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+select p_brand,
+	p_type,
+	p_size,
+	count(distinct ps_suppkey) as supplier_cnt
+from partsupp,
+	part
+where p_partkey = ps_partkey
+	and p_brand <> 'Brand#45'
+	and p_type not like 'MEDIUM POLISHED%'
+	and p_size in (49, 14, 23, 45, 19, 3, 36, 9)
+	and ps_suppkey not in (
+		select s_suppkey
+		from supplier
+		where s_comment like '%Customer%Complaints%'
+	)
+group by p_brand,
+	p_type,
+	p_size
+order by supplier_cnt desc,
+	p_brand,
+	p_type,
+	p_size;
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.273 \\
+  Execução 2 & 00:00:00.551 \\
+  Execução 3 & 00:00:00.277 \\
+  Execução 4 & 00:00:00.302 \\
+  Execução 5 & 00:00:00.294 \\
+  \hline
+  Média & 00:00:00.339 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/3.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices em \texttt{PARTSUPP.PS\_PARTKEY}, \texttt{PARTSUPP.PS\_SUPPKEY} e \texttt{PART.P\_PARTKEY} para otimizar as condições de junção.
+\section{Quarta Consulta:}
+
+
+\subsection{Objetivo da consulta:}
+objetivo aqui.
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+select c_name,
+	c_custkey,
+	o_orderkey,
+	o_orderdate,
+	o_totalprice,
+	sum(l_quantity)
+from customer,
+	orders,
+	lineitem
+where o_orderkey in (
+		select l_orderkey
+		from lineitem
+		group by l_orderkey
+		having sum(l_quantity) > 300
+	)
+	and c_custkey = o_custkey
+	and o_orderkey = l_orderkey
+group by c_name,
+	c_custkey,
+	o_orderkey,
+	o_orderdate,
+	o_totalprice
+order by o_totalprice desc,
+	o_orderdate;
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.346 \\
+  Execução 2 & 00:00:00.699 \\
+  Execução 3 & 00:00:00.319 \\
+  Execução 4 & 00:00:00.320 \\
+  Execução 5 & 00:00:00.282 \\
+  \hline
+  Média & 00:00:00.393 \\
+  \hline
+\end{tabular}
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/4.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{C\_CUSTKEY}, \texttt{O\_ORDERKEY} e \texttt{L\_ORDERKEY}.
+\section{Quinta Consulta:}
+
+
+\subsection{Objetivo da consulta:}
+objetivo aqui.
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+select sum(l_extendedprice * (1 - l_discount)) as revenue
+from lineitem,
+	part
+where (
+		p_partkey = l_partkey
+		and p_brand = 'Brand#12'
+		and p_container in (
+			'SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
+			and l_quantity >= 1
+			and l_quantity <= 1 + 10
+			and p_size between 1 and 5
+			and l_shipmode in ('AIR ', 'AIR REG')
+			and l_shipinstruct = 'DELIVER IN PERSON'
+		)
+		or (
+			p_partkey = l_partkey
+			and p_brand = 'Brand#23'
+			and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
+			and l_quantity >= 10
+			and l_quantity <= 10 + 10
+			and p_size between 1 and 10
+			and l_shipmode in ('AIR', 'AIR REG')
+			and l_shipinstruct = 'DELIVER IN PERSON'
+		)
+		or (
+			p_partkey = l_partkey
+			and p_brand = 'Brand#34'
+			and p_container in (
+				'LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
+				and l_quantity >= 20
+				and l_quantity <= 20 + 10
+				and p_size between 1 and 15
+				and l_shipmode in ('AIR', 'AIR REG')
+				and l_shipinstruct = 'DELIVER IN PERSON'
+			);
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.124 \\
+  Execução 2 & 00:00:00.413 \\
+  Execução 3 & 00:00:00.123 \\
+  Execução 4 & 00:00:00.143 \\
+  Execução 5 & 00:00:00.122 \\
+  \hline
+  Média & 00:00:00.185 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/5.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{p\_partkey} e \texttt{l\_partkey}. Além disso, índices nas colunas de filtragem como \texttt{p\_brand}, \texttt{p\_container}, \texttt{l\_quantity}, \texttt{p\_size}, \texttt{l\_shipmode} e \texttt{l\_shipinstruct} podem melhorar o desempenho.
+
+\section{Sexta Consulta}
+
+
+\subsection{Objetivo da consulta:}
+Encontrar os 10 principais clientes com a maior receita total
+
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+WITH CustomerRevenue AS (
+    SELECT
+        C_CUSTKEY,
+        C_NAME,
+        SUM(L_EXTENDEDPRICE * (1 - L_DISCOUNT)) AS TotalRevenue
+    FROM
+        CUSTOMER
+        JOIN ORDERS ON CUSTOMER.C_CUSTKEY = ORDERS.O_CUSTKEY
+        JOIN LINEITEM ON ORDERS.O_ORDERKEY = LINEITEM.L_ORDERKEY
+    GROUP BY
+        C_CUSTKEY,
+        C_NAME
+)
+SELECT
+    C_NAME,
+    TotalRevenue
+FROM
+    CustomerRevenue
+ORDER BY
+    TotalRevenue DESC
+LIMIT 10;
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.357 \\
+  Execução 2 & 00:00:00.614 \\
+  Execução 3 & 00:00:00.302 \\
+  Execução 4 & 00:00:00.333 \\
+  Execução 5 & 00:00:00.420 \\
+  \hline
+  Média & 00:00:00.405 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/6.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{C\_CUSTKEY} em CUSTOMER e \texttt{O\_CUSTKEY} em ORDERS.
+\section{Sétima Consulta}
+
+
+\subsection{Objetivo da consulta:}
+Calcular a média móvel dos preços totais do pedido para cada cliente
+
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+WITH CustomerOrderTotals AS (
+    SELECT
+        O_CUSTKEY,
+        O_ORDERKEY,
+        O_TOTALPRICE,
+        AVG(O_TOTALPRICE) OVER (PARTITION BY O_CUSTKEY ORDER BY O_ORDERKEY) AS RollingAvgTotalPrice
+    FROM
+        ORDERS
+)
+SELECT
+    C_NAME,
+    O_ORDERKEY,
+    O_TOTALPRICE,
+    RollingAvgTotalPrice
+FROM
+    CustomerOrderTotals
+    JOIN CUSTOMER ON CustomerOrderTotals.O_CUSTKEY = CUSTOMER.C_CUSTKEY;
+
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.945 \\
+  Execução 2 & 00:00:01.558 \\
+  Execução 3 & 00:00:01.211 \\
+  Execução 4 & 00:00:01.057 \\
+  Execução 5 & 00:00:01.277 \\
+  \hline
+  Média & 00:00:01.209 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/7.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{O\_CUSTKEY}, \texttt{O\_ORDERKEY} e \texttt{L\_ORDERKEY}.
+\section{Oitava Consulta}
+
+
+\subsection{Objetivo da consulta:}
+Calcular a receita total para cada região e ano
+
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+SELECT
+    R_NAME AS REGION,
+    EXTRACT(YEAR FROM O_ORDERDATE) AS ORDER_YEAR,
+    SUM(L_EXTENDEDPRICE * (1 - L_DISCOUNT)) AS TOTAL_REVENUE
+FROM
+    REGION,
+    NATION,
+    CUSTOMER,
+    ORDERS,
+    LINEITEM
+WHERE
+    REGION.R_REGIONKEY = NATION.N_REGIONKEY
+    AND NATION.N_NATIONKEY = CUSTOMER.C_NATIONKEY
+    AND CUSTOMER.C_CUSTKEY = ORDERS.O_CUSTKEY
+    AND ORDERS.O_ORDERKEY = LINEITEM.L_ORDERKEY
+GROUP BY
+    R_NAME,
+    EXTRACT(YEAR FROM O_ORDERDATE)
+ORDER BY
+    REGION,
+    ORDER_YEAR;
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.555 \\
+  Execução 2 & 00:00:00.776 \\
+  Execução 3 & 00:00:00.456 \\
+  Execução 4 & 00:00:00.461 \\
+  Execução 5 & 00:00:00.461 \\
+  \hline
+  Média & 00:00:00.542 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/8.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{REGION.R\_REGIONKEY}, \texttt{NATION.N\_REGIONKEY}, \texttt{CUSTOMER.C\_NATIONKEY}, \texttt{ORDERS.O\_CUSTKEY} e \texttt{LINEITEM.L\_ORDERKEY}.
+\section{Nona Consulta}
+
+
+\subsection{Objetivo da consulta:}
+Encontrar os clientes que fizeram pedidos de pelo menos três tipos de produtos diferentes
+
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+SELECT
+    C_NAME,
+    COUNT(DISTINCT P_TYPE) AS DISTINCT_PRODUCT_TYPES
+FROM
+    CUSTOMER,
+    ORDERS,
+    LINEITEM,
+    PART
+WHERE
+    CUSTOMER.C_CUSTKEY = ORDERS.O_CUSTKEY
+    AND ORDERS.O_ORDERKEY = LINEITEM.L_ORDERKEY
+    AND LINEITEM.L_PARTKEY = PART.P_PARTKEY
+GROUP BY
+    C_NAME
+HAVING
+    COUNT(DISTINCT P_TYPE) >= 3
+ORDER BY
+    DISTINCT_PRODUCT_TYPES DESC,
+    C_NAME;
+
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:02.538 \\
+  Execução 2 & 00:00:02.839 \\
+  Execução 3 & 00:00:02.443 \\
+  Execução 4 & 00:00:02.469 \\
+  Execução 5 & 00:00:02.433 \\
+  \hline
+  Média & 00:00:02.544 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/9.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{CUSTOMER.C\_CUSTKEY}, \texttt{ORDERS.O\_ORDERKEY} e \texttt{LINEITEM.L\_PARTKEY}.
+
+\section{Décima Consulta}
+
+
+\subsection{Objetivo da consulta:}
+Identificar fornecedores que não forneceram peças para uma marca específica
+
+\subsection{Consulta em SQL:}
+\begin{lstlisting}
+SELECT
+    S_SUPPKEY,
+    S_NAME,
+    S_NATIONKEY
+FROM
+    SUPPLIER
+WHERE
+    S_SUPPKEY NOT IN (
+        SELECT DISTINCT PS_SUPPKEY
+        FROM PARTSUPP,
+             PART
+        WHERE PARTSUPP.PS_PARTKEY = PART.P_PARTKEY
+          AND P_BRAND = 'Brand#12'
+    )
+ORDER BY
+    S_SUPPKEY;
+\end{lstlisting}
+
+\subsection{Tabela com os tempos das consultas e a média.}
+\begin{tabular}{|c|c|}
+  \hline
+  Execução 1 & 00:00:00.221 \\
+  Execução 2 & 00:00:00.498 \\
+  Execução 3 & 00:00:00.204 \\
+  Execução 4 & 00:00:00.237 \\
+  Execução 5 & 00:00:00.288 \\
+  \hline
+  Média & 00:00:00.290 \\
+  \hline
+\end{tabular}
+
+\subsection{Plano de Consulta gerado pelo postgresql:}
+\lstinputlisting[style=sql, caption=Plano de consulta, label=lst:explain]{./planos/10.csv}
+\subsection{Ações que pode melhorar o desempenho das 
+consultas:} Criação de Índice: Certifique-se de ter índices nas colunas usadas nas condições de junção, como \texttt{SUPPLIER.S\_SUPPKEY}, \texttt{PARTSUPP.PS\_SUPPKEY} e \texttt{PARTSUPP.PS\_PARTKEY}.
+
+\end{landscape}
+
+\end{document}
